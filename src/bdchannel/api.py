@@ -1,17 +1,22 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import md5
 import time
-import json
+try:
+    import json
+except:
+    import simplejson as json
 import uuid
 import requests
+import operator
 
-from utils import get_access_token, EnumDict, ChannelException
+from utils import EnumDict, ChannelException, get_access_token
 
 CHANNEL_URL = 'https://channel.api.duapp.com/rest/2.0/channel/%s'
 
 PUSH_TYPE = EnumDict()
-PUSH_TYPE.USRE = 1
+PUSH_TYPE.USER = 1
 PUSH_TYPE.TAG = 2
 PUSH_TYPE.ALL = 3
 
@@ -31,21 +36,22 @@ class Channel(object):
 
     def refresh_access_token(self):
         access_token = get_access_token(self.api_key, self.api_secret)
-        self.access_token = access_token.access_token
         self.expires = access_token.expires_in + time.time()
+        self.access_token = access_token.access_token
 
     def _request(self, channel_id='channel', params={}):
-        # 获取新的 access_token
         if time.time() + 3600 > self.expires:
             self.refresh_access_token()
         url = CHANNEL_URL % channel_id
 
-        params.update(access_token=self.access_token)
+        params.update({
+            'access_token': self.access_token,
+        })
 
         r = requests.post(url, data=params)
         if r.status_code != requests.codes.ok:
             raise ChannelException(r.status_code, r.text)
-        return EnumDict(r.text)
+        return EnumDict(json.loads(r.text))
 
     def query_bindlist(self, user_id, device_type=0, start=0, limit=10,
                        channel_id='channel'):
@@ -81,7 +87,7 @@ class Channel(object):
         params.update(
             push_type=push_type,
             messages=json.dumps(msgs),
-            mes_keys=json.dumps([uuid.uuid4().hex for x in msgs]),
+            msg_keys=json.dumps([uuid.uuid4().hex for x in msgs]),
             device_type=device_type,
             message_type=message_type,
             method='push_msg',
@@ -180,6 +186,7 @@ class Channel(object):
         params = {
             'method': 'set_tag',
             'user_id': user_id,
+            'tag': tag,
         }
         return self._request(params=params)
 

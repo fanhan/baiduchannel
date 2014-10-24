@@ -28,6 +28,10 @@ class ChannelException(Exception):
     def __init__(self, code, msg):
         self.error_code = code
         self.error_msg = msg
+        self.error = msg
+
+    def __str__(self):
+        return "%s: %s" % (self.error_code, self.error_msg)
 
 
 def get_access_token(api_key, api_secret):
