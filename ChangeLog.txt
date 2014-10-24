@@ -1,0 +1,5 @@
+# baiduchannel changelog
+
+## 2014-10-22 0.1
+
+* First public version.
